@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PCBuilder from "./components/PCBuilder";
 import AdminPanel from "./components/AdminPanel";
 import MonitorPage from "./components/MonitorPage";
@@ -22,7 +22,14 @@ function App() {
     "builder" | "admin" | "monitor" | "racik" | "wishlist"
   >("builder");
 
-  const [wishlist, setWishlist] = useState<Monitor[]>([]);
+  const [wishlist, setWishlist] = useState<Monitor[]>(() => {
+    const saved = localStorage.getItem("wishlist");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("wishlist", JSON.stringify(wishlist));
+  }, [wishlist]);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { user, logout } = useAuth();
 
