@@ -1,59 +1,66 @@
-const API_URL = 'http://localhost:3000/api';
+
+import { supabase } from './supabase';
 
 export const api = {
   getComponents: async () => {
-    try {
-      const response = await fetch(`${API_URL}/components`);
-      if (!response.ok) throw new Error('Failed to fetch components');
-      const data = await response.json();
-      // Ensure price is a number
-      return data.map((item: any) => ({
-        ...item,
-        price: Number(item.price)
-      }));
-    } catch (error) {
-      console.error('API Error:', error);
+    const { data, error } = await supabase
+      .from('components')
+      .select('*');
+    
+    if (error) {
+      console.error('Supabase Error:', error);
       return [];
     }
+    
+    return data.map((item: any) => ({
+      ...item,
+      price: Number(item.price)
+    }));
   },
 
   createComponent: async (component: any) => {
-    const response = await fetch(`${API_URL}/components`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(component),
-    });
-    if (!response.ok) throw new Error('Failed to create component');
-    return await response.json();
+    const { data, error } = await supabase
+      .from('components')
+      .insert([component])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
   },
 
   updateComponent: async (id: number, component: any) => {
-    const response = await fetch(`${API_URL}/components/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(component),
-    });
-    if (!response.ok) throw new Error('Failed to update component');
-    return await response.json();
+    const { data, error } = await supabase
+      .from('components')
+      .update(component)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   },
 
   deleteComponent: async (id: number) => {
-    const response = await fetch(`${API_URL}/components/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Failed to delete component');
-    return await response.json();
+    const { error } = await supabase
+      .from('components')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
   },
 
   getMonitors: async () => {
-    try {
-      const response = await fetch(`${API_URL}/monitors`);
-      if (!response.ok) throw new Error('Failed to fetch monitors');
-      return await response.json();
-    } catch (error) {
-      console.error('API Error:', error);
+    const { data, error } = await supabase
+      .from('monitors')
+      .select('*');
+      
+    if (error) {
+      console.error('Supabase Error:', error);
       return [];
     }
+    return data;
   }
 };
 

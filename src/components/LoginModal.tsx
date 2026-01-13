@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, User, Lock, LogIn, UserPlus, AlertCircle } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
 
 export default function LoginModal({
   isOpen,
@@ -14,40 +14,45 @@ export default function LoginModal({
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const endpoint = isRegistering ? "/api/auth/register" : "/api/auth/login";
-
     try {
-      const response = await fetch(`http://localhost:3000${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          password,
-          role: "pengguna", // Demo: Registering as admin for simplicity if isRegistering
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Something went wrong");
-      }
+      // Using a constructed email since the UI only has username
+      const email = `${username}@npc-pc.com`;
 
       if (isRegistering) {
-        // Auto login after register, or simpler: just switch to login mode with success msg
-        // For this demo, let's just log them in if register returns token (it currently doesn't, so prompt login)
-        setIsRegistering(false);
-        setError("");
-        alert("Account created! Please log in.");
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username,
+              role: "user",
+            },
+          },
+        });
+
+        if (error) throw error;
+
+        if (data.user && !data.session) {
+          alert(
+            "Registration successful! Please check your email to verify your account."
+          );
+          setIsRegistering(false);
+        } else {
+          onClose();
+        }
       } else {
-        login(data.token, data.user);
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
         onClose();
       }
     } catch (err: any) {

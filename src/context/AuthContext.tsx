@@ -1,15 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
 
 interface User {
-  id: number;
+  id: string | number;
   username: string;
   role: "user" | "admin";
+  email?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (token: string, user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }
@@ -20,23 +22,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Check local storage on mount
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
-    if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          username:
+            session.user.user_metadata.username ||
+            session.user.email?.split("@")[0] ||
+            "User",
+          role: session.user.user_metadata.role || "user",
+          email: session.user.email,
+        });
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          username:
+            session.user.user_metadata.username ||
+            session.user.email?.split("@")[0] ||
+            "User",
+          role: session.user.user_metadata.role || "user",
+          email: session.user.email,
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
+  const login = (_token: string, userData: User) => {
+    // Manually setting user if needed, though onAuthStateChange handles it.
+    // Keeping this for compatibility with existing calls.
     setUser(userData);
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
   };
 
