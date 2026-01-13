@@ -9,6 +9,9 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
+
 // Get all components
 app.get("/api/components", async (req, res) => {
   try {

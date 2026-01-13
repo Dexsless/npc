@@ -11,7 +11,6 @@ import {
   Box,
   Fan,
   Search,
-  ShoppingCart,
 } from "lucide-react";
 
 const BUDGET_ALLOCATION = {
@@ -26,14 +25,14 @@ const BUDGET_ALLOCATION = {
 };
 
 const COMPONENT_ICONS = {
-  CPU: Cpu,
-  GPU: MonitorPlay,
-  RAM: HardDrive,
-  Motherboard: CircuitBoard,
-  Storage: Database,
-  PSU: Zap,
-  Case: Box,
-  Cooler: Fan,
+  cpu: Cpu,
+  gpu: MonitorPlay,
+  ram: HardDrive,
+  motherboard: CircuitBoard,
+  storage: Database,
+  psu: Zap,
+  case: Box,
+  cooler: Fan,
 };
 
 export default function PCBuilder() {
@@ -101,204 +100,140 @@ export default function PCBuilder() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-white mb-4">
-            PC Builder Indonesia
-          </h1>
-          <p className="text-xl text-slate-300">
-            Dapatkan rekomendasi komponen PC terbaik sesuai budget Anda
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 py-12">
+      {/* Hero Section */}
+      <div className="text-center mb-16 relative">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl -z-10 animate-pulse"></div>
+        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 mb-6 tracking-tight">
+          Rakit PC Impian dalam Sekejap
+        </h1>
+        <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed">
+          Gunakan algoritma pintar kami untuk mendapatkan kombinasi spesifikasi
+          komputer terbaik sesuai anggaran Anda. Cepat, akurat, dan optimal.
+        </p>
+      </div>
 
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 mb-8 border border-white/20">
-          <div className="max-w-3xl mx-auto">
-            <label className="block text-white text-lg font-semibold mb-4">
-              Masukkan Budget Anda (IDR)
-            </label>
-            <div className="flex gap-4 mb-4">
-              <input
-                type="number"
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                placeholder="Contoh: 10000000"
-                className="flex-1 px-6 py-4 text-lg rounded-xl border-2 border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-200 transition-all outline-none"
-              />
-              <button
-                onClick={generateRecommendation}
-                disabled={loading}
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-8 py-4 rounded-xl flex items-center gap-3 font-semibold transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Search size={24} />
-                {loading ? "Memproses..." : "Cari Rekomendasi"}
-              </button>
+      {/* Input Section */}
+      <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full"></div>
+
+        <div className="relative z-10">
+          <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">
+            Anggaran Anda (IDR)
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <span className="text-slate-400 font-semibold group-focus-within:text-blue-500 transition-colors">
+                Rp
+              </span>
             </div>
+            <input
+              type="number"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              placeholder="Contoh: 10000000"
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition-all font-bold text-slate-800 placeholder:font-normal placeholder:text-slate-400"
+            />
+          </div>
 
-            <div className="flex flex-wrap gap-2">
-              <span className="text-slate-300 text-sm">Budget Populer:</span>
-              {budgetSuggestions.map((amount) => (
-                <button
-                  key={amount}
-                  onClick={() => setBudget(amount.toString())}
-                  className="px-4 py-1 bg-white/20 hover:bg-white/30 text-white text-sm rounded-lg transition-colors"
-                >
-                  {formatPrice(amount)}
-                </button>
-              ))}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {budgetSuggestions.map((amount) => (
+              <button
+                key={amount}
+                onClick={() => setBudget(amount.toString())}
+                className="px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:scale-105 transition-all"
+              >
+                {formatPrice(amount)}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={generateRecommendation}
+            disabled={loading}
+            className="w-full mt-8 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transform hover:-translate-y-1 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+          >
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Menganalisis Komponen...</span>
+              </>
+            ) : (
+              <>
+                <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span>Cari Rekomendasi Terbaik</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Results Section */}
+      {recommendation && (
+        <div className="mt-20 animate-slide-up">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+              <span className="w-2 h-8 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></span>
+              Rekomendasi Spesifikasi
+            </h2>
+            <div className="bg-emerald-50 text-emerald-700 px-6 py-3 rounded-xl border border-emerald-100 flex flex-col items-end">
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600/70">
+                Total Estimasi
+              </span>
+              <span className="text-2xl font-black tracking-tight">
+                {formatPrice(recommendation.totalPrice)}
+              </span>
             </div>
           </div>
-        </div>
 
-        {recommendation && (
-          <div className="space-y-6">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-6 border border-white/20">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">
-                    Total Estimasi Biaya
-                  </h2>
-                  <p className="text-slate-300">
-                    Budget Anda: {formatPrice(parseFloat(budget))}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-4xl font-bold text-green-400">
-                    {formatPrice(recommendation.totalPrice)}
-                  </div>
-                  <div className="text-sm text-slate-300 mt-1">
-                    {recommendation.totalPrice <= parseFloat(budget) ? (
-                      <span className="text-green-400">Sesuai Budget</span>
-                    ) : (
-                      <span className="text-red-400">
-                        Lebih{" "}
-                        {formatPrice(
-                          recommendation.totalPrice - parseFloat(budget)
-                        )}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Object.entries(recommendation).map(([key, component]) => {
-                if (key === "totalPrice" || !component) return null;
-
-                const type = component.type;
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Object.entries(recommendation)
+              .filter(([key]) => key !== "totalPrice")
+              .map(([key, component], index) => {
                 const Icon =
-                  COMPONENT_ICONS[type as keyof typeof COMPONENT_ICONS] ?? Box;
-                const allocation =
-                  BUDGET_ALLOCATION[type as keyof typeof BUDGET_ALLOCATION] ??
-                  0;
-                const maxPrice = parseFloat(budget) * allocation;
-
+                  COMPONENT_ICONS[key as keyof typeof COMPONENT_ICONS];
                 return (
                   <div
-                    key={component.id}
-                    className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow border-2 border-slate-200"
+                    key={key}
+                    className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 hover:shadow-xl hover:border-blue-200 transition-all group duration-300"
+                    style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden relative">
-                      <img
-                        src={component.image_url}
-                        alt={component.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-3 left-3 bg-slate-900/90 backdrop-blur-sm px-3 py-1 rounded-lg flex items-center gap-2">
-                        <Icon size={16} className="text-blue-400" />
-                        <span className="text-white text-sm font-semibold">
-                          {type}
-                        </span>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                        <Icon size={24} />
                       </div>
+                      <span className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-500 rounded-md uppercase tracking-wider">
+                        {key}
+                      </span>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-slate-800 text-lg mb-2 leading-tight">
-                        {component.name}
-                      </h3>
 
-                      {component.specs && (
-                        <p className="text-sm text-slate-600 mb-2">
-                          {component.specs}
+                    <div className="space-y-3">
+                      <div className="h-32 rounded-xl bg-slate-50 flex items-center justify-center p-4 group-hover:bg-slate-50/50 transition-colors">
+                        {/* Placeholder for component image if available, else generic placeholder */}
+                        <img
+                          src={
+                            (component as Component).image_url ||
+                            "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=300&h=300"
+                          }
+                          alt={(component as Component).name}
+                          className="w-full h-full object-contain mix-blend-multiply filter group-hover:brightness-110 transition-all duration-300"
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-800 leading-tight line-clamp-2 min-h-[2.5rem] group-hover:text-blue-600 transition-colors">
+                          {(component as Component).name}
+                        </h3>
+                        <p className="text-blue-600 font-bold mt-2 text-lg">
+                          {formatPrice((component as Component).price)}
                         </p>
-                      )}
-
-                      {component.description && (
-                        <p className="text-xs text-slate-500 mb-3 line-clamp-2">
-                          {component.description}
-                        </p>
-                      )}
-
-                      {component.marketplace_link && (
-                        <a
-                          href={component.marketplace_link}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block mb-3 text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center gap-1"
-                        >
-                          <ShoppingCart size={14} /> Link Pembelian
-                        </a>
-                      )}
-
-                      <div className="space-y-2 pt-3 border-t border-slate-200">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-slate-500">Harga</span>
-                          <span className="text-lg font-bold text-blue-600">
-                            {formatPrice(component.price)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-slate-500">Alokasi Budget</span>
-                          <span className="text-slate-600 font-medium">
-                            {formatPrice(maxPrice)}
-                          </span>
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              component.price <= maxPrice
-                                ? "bg-green-500"
-                                : "bg-red-500"
-                            }`}
-                            style={{
-                              width: `${Math.min(
-                                (component.price / maxPrice) * 100,
-                                100
-                              )}%`,
-                            }}
-                          />
-                        </div>
                       </div>
                     </div>
                   </div>
                 );
               })}
-            </div>
-
-            {components.length === 0 && (
-              <div className="bg-yellow-500/20 backdrop-blur-lg rounded-xl p-6 border border-yellow-500/50">
-                <p className="text-yellow-200 text-center">
-                  Belum ada komponen di database. Silakan jalankan backend dan
-                  pastikan database tersambung.
-                </p>
-              </div>
-            )}
           </div>
-        )}
-
-        {!recommendation && components.length > 0 && (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-6">🖥️</div>
-            <p className="text-2xl text-slate-300 mb-4">
-              Masukkan budget Anda untuk mendapatkan rekomendasi
-            </p>
-            <p className="text-slate-400">
-              Kami akan memberikan rekomendasi komponen terbaik sesuai anggaran
-              Anda
-            </p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

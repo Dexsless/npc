@@ -1,25 +1,22 @@
 import { useState, useEffect } from "react";
 import { api, formatPrice } from "../lib/api";
-import { Search, Star, Zap, Grid3x3, List, Filter } from "lucide-react";
-
-interface Monitor {
-  id: number;
-  title: string;
-  description: string;
-  resolution: string;
-  refresh_rate: number;
-  panel_type: string;
-  screen_size: number;
-  price: number;
-  rating: number;
-  featured: boolean;
-  image_url: string;
-}
+import { Search, Star, Zap, Grid3x3, List, Filter, Heart } from "lucide-react";
+import { Monitor } from "../types/monitor";
 
 type FilterType = "all" | "gaming" | "professional" | "budget";
 type ViewType = "grid" | "list";
 
-export default function MonitorPage() {
+interface MonitorPageProps {
+  wishlist: Monitor[];
+  onAddToWishlist: (monitor: Monitor) => void;
+  onRemoveFromWishlist: (monitor: Monitor) => void;
+}
+
+export default function MonitorPage({
+  wishlist,
+  onAddToWishlist,
+  onRemoveFromWishlist,
+}: MonitorPageProps) {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [filteredMonitors, setFilteredMonitors] = useState<Monitor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +78,10 @@ export default function MonitorPage() {
   };
 
   const featuredMonitors = monitors.filter((m) => m.featured);
+
+  const isInWishlist = (monitorId: number) => {
+    return wishlist.some((m) => m.id === monitorId);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50">
@@ -301,6 +302,11 @@ export default function MonitorPage() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         )}
+                        {isInWishlist(monitor.id) && (
+                          <div className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full text-red-500 shadow-sm">
+                            <Heart size={16} className="fill-current" />
+                          </div>
+                        )}
                       </div>
 
                       <div className="p-4">
@@ -370,6 +376,11 @@ export default function MonitorPage() {
                             alt={monitor.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
+                        )}
+                        {isInWishlist(monitor.id) && (
+                          <div className="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full text-red-500 shadow-sm">
+                            <Heart size={14} className="fill-current" />
+                          </div>
                         )}
                       </div>
 
@@ -528,8 +539,29 @@ export default function MonitorPage() {
                   </div>
                 </div>
 
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors">
-                  Add to PC Build
+                <button
+                  onClick={() => {
+                    if (isInWishlist(selectedMonitor.id)) {
+                      onRemoveFromWishlist(selectedMonitor);
+                    } else {
+                      onAddToWishlist(selectedMonitor);
+                    }
+                  }}
+                  className={`w-full font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                    isInWishlist(selectedMonitor.id)
+                      ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  <Heart
+                    size={20}
+                    className={
+                      isInWishlist(selectedMonitor.id) ? "fill-current" : ""
+                    }
+                  />
+                  {isInWishlist(selectedMonitor.id)
+                    ? "Remove from Wishlist"
+                    : "Add to Wishlist"}
                 </button>
               </div>
             </div>
