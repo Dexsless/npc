@@ -57,7 +57,7 @@ function App() {
               <div className="relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-full blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
                 <img
-                  src="assets/image/npc_logo.png"
+                  src="/assets/image/npc_logo.png"
                   className="w-14 h-14 relative z-10 drop-shadow-lg transform group-hover:scale-105 transition-transform duration-300"
                   alt="NPC Logo"
                 />
@@ -239,7 +239,7 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="mb-6 flex justify-center items-center gap-3 opacity-50 hover:opacity-100 transition-opacity">
             <img
-              src="assets/image/npc_logo.png"
+              src="/assets/image/npc_logo.png"
               className="w-10 h-10 grayscale hover:grayscale-0 transition-all"
               alt="NPC Logo"
             />
