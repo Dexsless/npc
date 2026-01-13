@@ -22,67 +22,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Helper to get profile from DB
-    const getProfile = async (session: any) => {
-      if (!session?.user) return null;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-
-      return {
-        id: session.user.id,
-        username:
-          profile?.username ||
-          session.user.user_metadata.username ||
-          session.user.email?.split("@")[0] ||
-          "User",
-        role: profile?.role || "user",
-        email: session.user.email,
-      };
-    };
-
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        // Optimistic update
         setUser({
           id: session.user.id,
           username:
             session.user.user_metadata.username ||
             session.user.email?.split("@")[0] ||
             "User",
-          role: "user", // Default to user initially
+          role: session.user.user_metadata.role || "user",
           email: session.user.email,
-        });
-
-        // Background fetch
-        getProfile(session).then((user) => {
-          if (user) setUser(user);
         });
       }
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        // Optimistic update
         setUser({
           id: session.user.id,
           username:
             session.user.user_metadata.username ||
             session.user.email?.split("@")[0] ||
             "User",
-          role: "user", // Default to user initially
+          role: session.user.user_metadata.role || "user",
           email: session.user.email,
         });
-
-        // Background fetch
-        const user = await getProfile(session);
-        if (user) setUser(user);
       } else {
         setUser(null);
       }
