@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { Monitor } from "../types/monitor";
 import { formatPrice } from "../lib/api";
 import { Star, Heart } from "lucide-react";
 import { useWishlist } from "../context/WishlistContext";
 import MarketplaceButtons from "./MarketplaceButtons";
+import MonitorModal from "./MonitorModal";
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist } = useWishlist();
+  const [selectedMonitor, setSelectedMonitor] = useState<Monitor | null>(null);
 
   const getRatingColor = (rating: number) => {
     if (rating >= 4.7) return "text-red-600";
@@ -41,7 +44,8 @@ export default function WishlistPage() {
             {wishlist.map((monitor) => (
               <div
                 key={monitor.id}
-                className="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200 group flex flex-col h-full"
+                onClick={() => setSelectedMonitor(monitor)}
+                className="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200 group flex flex-col h-full cursor-pointer hover:shadow-lg transition-all"
               >
                 <div className="relative h-48 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden flex-shrink-0">
                   {monitor.image_url && (
@@ -52,7 +56,10 @@ export default function WishlistPage() {
                     />
                   )}
                   <button
-                    onClick={() => removeFromWishlist(monitor)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFromWishlist(monitor);
+                    }}
                     className="absolute top-3 right-3 bg-white/90 p-2 rounded-full text-red-500 hover:bg-red-50 transition-colors shadow-sm"
                     title="Hapus dari wishlist"
                   >
@@ -104,6 +111,13 @@ export default function WishlistPage() {
           </div>
         )}
       </div>
+
+      {selectedMonitor && (
+        <MonitorModal
+          monitor={selectedMonitor}
+          onClose={() => setSelectedMonitor(null)}
+        />
+      )}
     </div>
   );
 }

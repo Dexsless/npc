@@ -1,16 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import gsap from "gsap";
 import { api, formatPrice } from "../lib/api";
 import { Search, Star, Zap, Grid3x3, List, Filter, Heart } from "lucide-react";
 import { Monitor } from "../types/monitor";
 import MarketplaceButtons from "./MarketplaceButtons";
 import { useWishlist } from "../context/WishlistContext";
+import MonitorModal from "./MonitorModal";
 
 type FilterType = "all" | "gaming" | "professional" | "budget";
 type ViewType = "grid" | "list";
 
 export default function MonitorPage() {
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { isInWishlist } = useWishlist();
 
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [filteredMonitors, setFilteredMonitors] = useState<Monitor[]>([]);
@@ -20,13 +21,33 @@ export default function MonitorPage() {
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [selectedMonitor, setSelectedMonitor] = useState<Monitor | null>(null);
 
+  const applyFilters = useCallback(() => {
+    let filtered = [...monitors];
+
+    filtered = filtered.filter(
+      (m) =>
+        m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.description.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+
+    if (filterType === "gaming") {
+      filtered = filtered.filter((m) => m.refresh_rate >= 144);
+    } else if (filterType === "professional") {
+      filtered = filtered.filter((m) => m.screen_size >= 27);
+    } else if (filterType === "budget") {
+      filtered = filtered.filter((m) => m.price <= 4500000); // Adjusted for IDR
+    }
+
+    setFilteredMonitors(filtered);
+  }, [monitors, searchQuery, filterType]);
+
   useEffect(() => {
     fetchMonitors();
   }, []);
 
   useEffect(() => {
     applyFilters();
-  }, [monitors, searchQuery, filterType]);
+  }, [applyFilters]);
 
   // Animate cards when filteredMonitors changes
   useEffect(() => {
@@ -50,26 +71,6 @@ export default function MonitorPage() {
     const data = await api.getMonitors();
     setMonitors(data);
     setLoading(false);
-  };
-
-  const applyFilters = () => {
-    let filtered = [...monitors];
-
-    filtered = filtered.filter(
-      (m) =>
-        m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.description.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
-
-    if (filterType === "gaming") {
-      filtered = filtered.filter((m) => m.refresh_rate >= 144);
-    } else if (filterType === "professional") {
-      filtered = filtered.filter((m) => m.screen_size >= 27);
-    } else if (filterType === "budget") {
-      filtered = filtered.filter((m) => m.price <= 4500000); // Adjusted for IDR
-    }
-
-    setFilteredMonitors(filtered);
   };
 
   const getRatingColor = (rating: number) => {
@@ -482,122 +483,10 @@ export default function MonitorPage() {
       </div>
 
       {selectedMonitor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
-            <div className="flex justify-between items-start mb-6">
-              <h2 className="text-3xl font-bold text-slate-800">
-                {selectedMonitor.title}
-              </h2>
-              <button
-                onClick={() => setSelectedMonitor(null)}
-                className="text-slate-400 hover:text-slate-600 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="h-64 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg overflow-hidden">
-                {selectedMonitor.image_url && (
-                  <img
-                    src={selectedMonitor.image_url}
-                    alt={selectedMonitor.title}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </div>
-
-              <div>
-                <p className="text-slate-600 mb-4">
-                  {selectedMonitor.description}
-                </p>
-
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-                    <span className="text-slate-600">Resolution</span>
-                    <span className="font-semibold text-slate-800">
-                      {selectedMonitor.resolution}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-                    <span className="text-slate-600">Refresh Rate</span>
-                    <span className="font-semibold text-slate-800">
-                      {selectedMonitor.refresh_rate}Hz
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-                    <span className="text-slate-600">Panel Type</span>
-                    <span className="font-semibold text-slate-800">
-                      {selectedMonitor.panel_type}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-                    <span className="text-slate-600">Screen Size</span>
-                    <span className="font-semibold text-slate-800">
-                      {selectedMonitor.screen_size}"
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <div className="text-4xl font-bold text-slate-800">
-                      {formatPrice(selectedMonitor.price)}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center gap-1 justify-center mb-1">
-                      <Star
-                        size={20}
-                        className={`fill-current ${getRatingColor(
-                          selectedMonitor.rating,
-                        )}`}
-                      />
-                      <span
-                        className={`text-2xl font-bold ${getRatingColor(
-                          selectedMonitor.rating,
-                        )}`}
-                      >
-                        {selectedMonitor.rating}
-                      </span>
-                    </div>
-                    <span className="text-sm text-slate-600">/5 Rating</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (isInWishlist(selectedMonitor.id)) {
-                      removeFromWishlist(selectedMonitor);
-                    } else {
-                      addToWishlist(selectedMonitor);
-                    }
-                  }}
-                  className={`w-full font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mb-4 ${
-                    isInWishlist(selectedMonitor.id)
-                      ? "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                      : "bg-blue-600 hover:bg-blue-700 text-white"
-                  }`}
-                >
-                  <Heart
-                    size={20}
-                    className={
-                      isInWishlist(selectedMonitor.id) ? "fill-current" : ""
-                    }
-                  />
-                  {isInWishlist(selectedMonitor.id)
-                    ? "Remove from Wishlist"
-                    : "Add to Wishlist"}
-                </button>
-
-                <MarketplaceButtons
-                  name={selectedMonitor.title}
-                  links={selectedMonitor.marketplace_links}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <MonitorModal
+          monitor={selectedMonitor}
+          onClose={() => setSelectedMonitor(null)}
+        />
       )}
     </div>
   );

@@ -28,22 +28,26 @@ function AppContent() {
 
   // Initial animation
   useEffect(() => {
-    gsap.from("nav", {
-      y: -100,
-      opacity: 0,
-      duration: 1,
-      ease: "power3.out",
+    const ctx = gsap.context(() => {
+      gsap.from("nav", {
+        y: -100,
+        opacity: 0,
+        duration: 1,
+        ease: "power3.out",
+      });
+
+      // Animate hero text/logo elements staggered
+      gsap.from(".logo-element", {
+        y: -20,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.1,
+        ease: "power2.out",
+        delay: 0.5,
+      });
     });
 
-    // Animate hero text/logo elements staggered
-    gsap.from(".logo-element", {
-      y: -20,
-      opacity: 0,
-      duration: 0.8,
-      stagger: 0.1,
-      ease: "power2.out",
-      delay: 0.5,
-    });
+    return () => ctx.revert();
   }, []);
 
   // Page transition animation
@@ -59,14 +63,6 @@ function AppContent() {
 
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { user, logout } = useAuth();
-
-  const handleAdminClick = () => {
-    if (!user || user.role !== "admin") {
-      setIsLoginOpen(true);
-    } else {
-      setCurrentPage("admin");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">

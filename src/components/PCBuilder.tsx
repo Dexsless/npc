@@ -43,6 +43,10 @@ export default function PCBuilder() {
   const [recommendation, setRecommendation] = useState<PCBuild | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Modes
+  const [buildMode, setBuildMode] = useState<"full" | "part">("full");
+  const [targetComponent, setTargetComponent] = useState<ComponentType>("GPU");
+
   // Filters
   const [platform, setPlatform] = useState<"all" | "intel" | "amd">("all");
   const [gpuType, setGpuType] = useState<"all" | "nvidia" | "amd">("all");
@@ -73,15 +77,12 @@ export default function PCBuilder() {
           c.name.toLowerCase().includes(componentPlatform),
         );
       } else if (type === "Motherboard") {
-        // Simple heuristic: Intel mobos often start with B, Z, H (e.g. B760, Z790). AMD: B, X, A (B650, X670).
-        // Better: check compatibility string if available. For now, rely on naming convention if possible or skip.
-        // Actually, without compatibility metadata, this is hard. I'll search for socket names or brand hints.
-        const isIntel = (c) =>
+        const isIntel = (c: Component) =>
           c.name.includes("LGA") ||
           c.name.includes("Z790") ||
           c.name.includes("B760") ||
           c.name.includes("H610");
-        const isAmd = (c) =>
+        const isAmd = (c: Component) =>
           c.name.includes("AM4") ||
           c.name.includes("AM5") ||
           c.name.includes("B650") ||
@@ -110,10 +111,7 @@ export default function PCBuilder() {
     }
 
     if (typeComponents.length === 0) {
-      // Fallback: try to find cheapest valid one ignoring price if none found within budget?
-      // Or just return cheapest of type regardless of filter if strict filter fails?
-      // Let's stick to strict filter but return lowest price of that filtered set if price constraint was too strict.
-      // Refilter just by type/platform without price limit
+      // Fallback: strict filter failed, try relaxed filter (ignore price cap but keep type/platform)
       let fallbackComponents = components.filter((c) => c.type === type);
 
       if (componentPlatform !== "all") {
@@ -121,13 +119,9 @@ export default function PCBuilder() {
           fallbackComponents = fallbackComponents.filter((c) =>
             c.name.toLowerCase().includes(componentPlatform),
           );
-        // ... (Repeat logic for mobo/gpu or extract helper).
-        // For brevity/robustness, if budget fails, we return undefined or handled gracefully.
-        // Let's just return cheapest of the type ignoring price cap, BUT respecting platform.
-        if (type === "CPU") {
-          fallbackComponents = fallbackComponents.filter((c) =>
-            c.name.toLowerCase().includes(componentPlatform),
-          );
+        // Add motherboard logic here if needed for fallback
+        if (type === "Motherboard") {
+          // minimal fallback logic if needed
         }
       }
       if (type === "GPU" && componentGpuType !== "all") {
@@ -143,9 +137,15 @@ export default function PCBuilder() {
           );
       }
 
+      // If we are in 'part' mode (using full budget), taking the cheapest might be weird if budget is high,
+      // but 'maxPrice' passed here is actually the budget. So if nothing is found <= maxPrice,
+      // it means even the cheapest is too expensive OR filters are too strict.
+      // Ideally we return undefined if truly nothing fits.
+      // But let's stick to returning the cheapest valid one as a "closest match".
       return fallbackComponents.sort((a, b) => a.price - b.price)[0];
     }
 
+    // Return the most expensive one that fits in budget (best performance logic)
     return typeComponents.reduce((best, current) => {
       const bestDiff = maxPrice - best.price;
       const currentDiff = maxPrice - current.price;
@@ -163,20 +163,42 @@ export default function PCBuilder() {
     const totalBudget = parseFloat(budget);
     const build: PCBuild = { totalPrice: 0 };
 
-    Object.entries(BUDGET_ALLOCATION).forEach(([type, allocation]) => {
-      const maxPrice = totalBudget * allocation;
+    if (buildMode === "full") {
+      Object.entries(BUDGET_ALLOCATION).forEach(([type, allocation]) => {
+        const maxPrice = totalBudget * allocation;
+        const component = findBestComponent(
+          type as ComponentType,
+          maxPrice,
+          platform,
+          gpuType,
+        );
+        if (component) {
+          const key = type.toLowerCase() as keyof Omit<PCBuild, "totalPrice">;
+          // @ts-ignore - dynamic assignment
+          build[key] = component;
+          build.totalPrice += component.price;
+        }
+      });
+    } else {
+      // Single Component Mode
+      // Use nearly 100% of budget (maybe keep a tiny buffer? No, let's use 100%)
       const component = findBestComponent(
-        type as ComponentType,
-        maxPrice,
+        targetComponent,
+        totalBudget,
         platform,
         gpuType,
       );
+
       if (component) {
-        const key = type.toLowerCase() as keyof Omit<PCBuild, "totalPrice">;
+        const key = targetComponent.toLowerCase() as keyof Omit<
+          PCBuild,
+          "totalPrice"
+        >;
+        // @ts-ignore
         build[key] = component;
-        build.totalPrice += component.price;
+        build.totalPrice = component.price;
       }
-    });
+    }
 
     setRecommendation(build);
     setLoading(false);
@@ -184,6 +206,17 @@ export default function PCBuilder() {
 
   const budgetSuggestions = [
     5000000, 8000000, 12000000, 15000000, 20000000, 30000000,
+  ];
+
+  const componentTypes: ComponentType[] = [
+    "CPU",
+    "GPU",
+    "Motherboard",
+    "RAM",
+    "Storage",
+    "PSU",
+    "Case",
+    "Cooler",
   ];
 
   return (
@@ -205,8 +238,40 @@ export default function PCBuilder() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full"></div>
 
         <div className="relative z-10">
+          {/* Mode Toggle */}
+          <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+            <button
+              onClick={() => {
+                setBuildMode("full");
+                setRecommendation(null);
+              }}
+              className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${
+                buildMode === "full"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Full Rakitan FC
+            </button>
+            <button
+              onClick={() => {
+                setBuildMode("part");
+                setRecommendation(null);
+              }}
+              className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${
+                buildMode === "part"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Cari Komponen Satuan
+            </button>
+          </div>
+
           <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-wide">
-            Anggaran Anda (IDR)
+            {buildMode === "full"
+              ? "Total Anggaran (IDR)"
+              : "Anggaran Maksimal (IDR)"}
           </label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -223,7 +288,7 @@ export default function PCBuilder() {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex flex-wrap gap-2 mt-4 mb-6">
             {budgetSuggestions.map((amount) => (
               <button
                 key={amount}
@@ -235,82 +300,116 @@ export default function PCBuilder() {
             ))}
           </div>
 
-          <div className="mt-6 flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+          {buildMode === "part" && (
+            <div className="mb-6 animate-fade-in">
               <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
-                Platform Processor
+                Pilih Jenis Komponen
               </label>
-              <div className="flex bg-slate-100 p-1 rounded-lg">
-                <button
-                  onClick={() => setPlatform("all")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                    platform === "all"
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  Semua
-                </button>
-                <button
-                  onClick={() => setPlatform("intel")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                    platform === "intel"
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  Intel
-                </button>
-                <button
-                  onClick={() => setPlatform("amd")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                    platform === "amd"
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  AMD
-                </button>
+              <div className="grid grid-cols-2 gap-2">
+                {componentTypes.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setTargetComponent(type)}
+                    className={`py-2 px-3 text-sm font-bold rounded-lg border-2 transition-all ${
+                      targetComponent === type
+                        ? "border-blue-500 bg-blue-50 text-blue-600"
+                        : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
               </div>
             </div>
+          )}
 
-            <div className="flex-1">
-              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
-                Jenis GPU
-              </label>
-              <div className="flex bg-slate-100 p-1 rounded-lg">
-                <button
-                  onClick={() => setGpuType("all")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                    gpuType === "all"
-                      ? "bg-white text-blue-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  Semua
-                </button>
-                <button
-                  onClick={() => setGpuType("nvidia")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                    gpuType === "nvidia"
-                      ? "bg-white text-green-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  NVIDIA
-                </button>
-                <button
-                  onClick={() => setGpuType("amd")}
-                  className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                    gpuType === "amd"
-                      ? "bg-white text-red-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  Radeon
-                </button>
+          {/* Filters - Only show relevant filters */}
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Show Platform filter if Full Mode OR (Part Mode AND (CPU or Mobo selected)) */}
+            {(buildMode === "full" ||
+              (buildMode === "part" &&
+                (targetComponent === "CPU" ||
+                  targetComponent === "Motherboard"))) && (
+              <div className="flex-1 animate-fade-in">
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                  Platform Processor
+                </label>
+                <div className="flex bg-slate-100 p-1 rounded-lg">
+                  <button
+                    onClick={() => setPlatform("all")}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                      platform === "all"
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setPlatform("intel")}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                      platform === "intel"
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    Intel
+                  </button>
+                  <button
+                    onClick={() => setPlatform("amd")}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                      platform === "amd"
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    AMD
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Show GPU Filter if Full Mode OR (Part Mode AND GPU selected) */}
+            {(buildMode === "full" ||
+              (buildMode === "part" && targetComponent === "GPU")) && (
+              <div className="flex-1 animate-fade-in">
+                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                  Jenis GPU
+                </label>
+                <div className="flex bg-slate-100 p-1 rounded-lg">
+                  <button
+                    onClick={() => setGpuType("all")}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                      gpuType === "all"
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setGpuType("nvidia")}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                      gpuType === "nvidia"
+                        ? "bg-white text-green-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    NVIDIA
+                  </button>
+                  <button
+                    onClick={() => setGpuType("amd")}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
+                      gpuType === "amd"
+                        ? "bg-white text-red-600 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    Radeon
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <button
@@ -321,12 +420,14 @@ export default function PCBuilder() {
             {loading ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Menganalisis Komponen...</span>
+                <span>Menganalisis...</span>
               </>
             ) : (
               <>
                 <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span>Cari Rekomendasi Terbaik</span>
+                <span>
+                  {buildMode === "full" ? "Buat Rakitan PC" : "Cari Komponen"}
+                </span>
               </>
             )}
           </button>
@@ -339,11 +440,13 @@ export default function PCBuilder() {
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
               <span className="w-2 h-8 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></span>
-              Rekomendasi Spesifikasi
+              {buildMode === "full"
+                ? "Rekomendasi Spesifikasi"
+                : `Rekomendasi ${targetComponent}`}
             </h2>
             <div className="bg-emerald-50 text-emerald-700 px-6 py-3 rounded-xl border border-emerald-100 flex flex-col items-end">
               <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600/70">
-                Total Estimasi
+                {buildMode === "full" ? "Total Estimasi" : "Harga Terbaik"}
               </span>
               <span className="text-2xl font-black tracking-tight">
                 {formatPrice(recommendation.totalPrice)}
@@ -351,16 +454,18 @@ export default function PCBuilder() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div
+            className={`grid gap-6 ${buildMode === "full" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 max-w-lg mx-auto"}`}
+          >
             {Object.entries(recommendation)
               .filter(([key]) => key !== "totalPrice")
               .map(([key, component], index) => {
                 const Icon =
-                  COMPONENT_ICONS[key as keyof typeof COMPONENT_ICONS];
+                  COMPONENT_ICONS[key as keyof typeof COMPONENT_ICONS] || Box;
                 return (
                   <div
                     key={key}
-                    className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 hover:shadow-xl hover:border-blue-200 transition-all group duration-300"
+                    className={`bg-white p-6 rounded-2xl shadow-lg border border-slate-100 hover:shadow-xl hover:border-blue-200 transition-all group duration-300 ${buildMode === "part" ? "border-l-4 border-l-blue-500" : ""}`}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="flex items-start justify-between mb-4">
@@ -373,7 +478,9 @@ export default function PCBuilder() {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="h-32 rounded-xl bg-slate-50 flex items-center justify-center p-4 group-hover:bg-slate-50/50 transition-colors">
+                      <div
+                        className={`${buildMode === "part" ? "h-48" : "h-32"} rounded-xl bg-slate-50 flex items-center justify-center p-4 group-hover:bg-slate-50/50 transition-colors`}
+                      >
                         {/* Placeholder for component image if available, else generic placeholder */}
                         <img
                           src={
@@ -385,9 +492,16 @@ export default function PCBuilder() {
                         />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-800 leading-tight line-clamp-2 min-h-[2.5rem] group-hover:text-blue-600 transition-colors">
+                        <h3
+                          className={`font-bold text-slate-800 leading-tight ${buildMode === "part" ? "text-xl" : "line-clamp-2 min-h-[2.5rem]"} group-hover:text-blue-600 transition-colors`}
+                        >
                           {(component as Component).name}
                         </h3>
+                        {buildMode === "part" && (
+                          <p className="text-sm text-slate-500 mt-1 mb-2 line-clamp-2">
+                            {(component as Component).description}
+                          </p>
+                        )}
                         <p className="text-blue-600 font-bold mt-2 text-lg">
                           {formatPrice((component as Component).price)}
                         </p>

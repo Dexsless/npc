@@ -61,6 +61,39 @@ export const api = {
       return [];
     }
     return data;
+  },
+
+  createMonitor: async (monitor: any) => {
+    const { data, error } = await supabase
+      .from('monitors')
+      .insert([monitor])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  },
+
+  updateMonitor: async (id: number, monitor: any) => {
+    const { data, error } = await supabase
+      .from('monitors')
+      .update(monitor)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  deleteMonitor: async (id: number) => {
+    const { error } = await supabase
+      .from('monitors')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return { success: true };
   }
 };
 
