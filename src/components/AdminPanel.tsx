@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { api, formatPrice } from "../lib/api";
 import { Component, ComponentType } from "../types/component";
 import { Monitor } from "../types/monitor";
@@ -37,11 +38,13 @@ const componentSchema = z.object({
   image_url: z.string().url("URL gambar tidak valid"),
   specs: z.string().optional(),
   description: z.string().optional(),
-  marketplace_link: z
-    .string()
-    .url("Link marketplace tidak valid")
-    .optional()
-    .or(z.literal("")),
+  marketplace_links: z
+    .object({
+      shopee: z.string().url().optional().or(z.literal("")),
+      tokopedia: z.string().url().optional().or(z.literal("")),
+      lazada: z.string().url().optional().or(z.literal("")),
+    })
+    .optional(),
 });
 
 const monitorSchema = z.object({
@@ -103,7 +106,11 @@ export default function AdminPanel() {
     image_url: "",
     specs: "",
     description: "",
-    marketplace_link: "",
+    marketplace_links: {
+      shopee: "",
+      tokopedia: "",
+      lazada: "",
+    },
   });
 
   const [monForm, setMonForm] = useState({
@@ -187,7 +194,7 @@ export default function AdminPanel() {
         image_url: "",
         specs: "",
         description: "",
-        marketplace_link: "",
+        marketplace_links: { shopee: "", tokopedia: "", lazada: "" },
       });
     } else {
       setMonForm({
@@ -224,7 +231,11 @@ export default function AdminPanel() {
         image_url: c.image_url,
         specs: c.specs || "",
         description: c.description || "",
-        marketplace_link: c.marketplace_link || "",
+        marketplace_links: c.marketplace_links || {
+          shopee: "",
+          tokopedia: "",
+          lazada: "",
+        },
       });
     } else {
       const m = item as Monitor;
@@ -350,11 +361,10 @@ export default function AdminPanel() {
                 key={t}
                 type="button"
                 onClick={() => setFilterType(t as any)}
-                className={`px-4 py-2 rounded-lg ${
-                  filterType === t
-                    ? "bg-slate-700 text-white"
-                    : "bg-white border"
-                }`}
+                className={`px-4 py-2 rounded-lg ${filterType === t
+                  ? "bg-slate-700 text-white"
+                  : "bg-white border"
+                  }`}
               >
                 {t}
               </button>
@@ -367,99 +377,99 @@ export default function AdminPanel() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activeTab === "components"
               ? // COMPONENTS LIST
-                filteredComponents.map((c) => (
-                  <div
-                    key={c.id}
-                    className="bg-white border rounded-xl overflow-hidden shadow-sm"
-                  >
-                    <img
-                      src={c.image_url}
-                      alt={c.name}
-                      className="aspect-video w-full object-cover"
-                    />
-                    <div className="p-4">
-                      <span className="text-xs bg-slate-700 text-white px-2 py-1 rounded">
-                        {c.type}
-                      </span>
-                      <h3 className="font-semibold mt-2">{c.name}</h3>
-                      <p className="text-sm text-slate-600 line-clamp-2">
-                        {c.specs}
-                      </p>
-                      <p className="text-blue-600 font-bold mt-2">
-                        {formatPrice(c.price)}
-                      </p>
+              filteredComponents.map((c) => (
+                <div
+                  key={c.id}
+                  className="bg-white border rounded-xl overflow-hidden shadow-sm"
+                >
+                  <img
+                    src={c.image_url}
+                    alt={c.name}
+                    className="aspect-video w-full object-cover"
+                  />
+                  <div className="p-4">
+                    <span className="text-xs bg-slate-700 text-white px-2 py-1 rounded">
+                      {c.type}
+                    </span>
+                    <h3 className="font-semibold mt-2">{c.name}</h3>
+                    <p className="text-sm text-slate-600 line-clamp-2">
+                      {c.specs}
+                    </p>
+                    <p className="text-blue-600 font-bold mt-2">
+                      {formatPrice(c.price)}
+                    </p>
 
-                      <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(c)}
-                          className="text-slate-600 hover:text-blue-600"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(c.id)}
-                          className="text-slate-600 hover:text-red-600"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
+                    <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(c)}
+                        className="text-slate-600 hover:text-blue-600"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(c.id)}
+                        className="text-slate-600 hover:text-red-600"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
                   </div>
-                ))
+                </div>
+              ))
               : // MONITORS LIST
-                monitors.map((m) => (
-                  <div
-                    key={m.id}
-                    className="bg-white border rounded-xl overflow-hidden shadow-sm"
-                  >
-                    <img
-                      src={m.image_url}
-                      alt={m.title}
-                      className="aspect-video w-full object-cover"
-                    />
-                    <div className="p-4">
-                      <span className="text-xs bg-indigo-600 text-white px-2 py-1 rounded">
-                        {m.screen_size}" {m.panel_type}
+              monitors.map((m) => (
+                <div
+                  key={m.id}
+                  className="bg-white border rounded-xl overflow-hidden shadow-sm"
+                >
+                  <img
+                    src={m.image_url}
+                    alt={m.title}
+                    className="aspect-video w-full object-cover"
+                  />
+                  <div className="p-4">
+                    <span className="text-xs bg-indigo-600 text-white px-2 py-1 rounded">
+                      {m.screen_size}" {m.panel_type}
+                    </span>
+                    <h3 className="font-semibold mt-2">{m.title}</h3>
+                    <p className="text-sm text-slate-600 line-clamp-2">
+                      {m.resolution} | {m.refresh_rate}Hz
+                    </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <span className="text-xs font-bold text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">
+                        ★ {m.rating}
                       </span>
-                      <h3 className="font-semibold mt-2">{m.title}</h3>
-                      <p className="text-sm text-slate-600 line-clamp-2">
-                        {m.resolution} | {m.refresh_rate}Hz
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <span className="text-xs font-bold text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">
-                          ★ {m.rating}
+                      {m.featured && (
+                        <span className="text-xs font-bold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
+                          Featured
                         </span>
-                        {m.featured && (
-                          <span className="text-xs font-bold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
-                            Featured
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-blue-600 font-bold mt-2">
-                        {formatPrice(m.price)}
-                      </p>
+                      )}
+                    </div>
+                    <p className="text-blue-600 font-bold mt-2">
+                      {formatPrice(m.price)}
+                    </p>
 
-                      <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(m)}
-                          className="text-slate-600 hover:text-blue-600"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(m.id)}
-                          className="text-slate-600 hover:text-red-600"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
+                    <div className="flex justify-end gap-2 mt-3 pt-3 border-t">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(m)}
+                        className="text-slate-600 hover:text-blue-600"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(m.id)}
+                        className="text-slate-600 hover:text-red-600"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
           </div>
         ) : (
           <p className="text-center">Memuat...</p>
@@ -569,15 +579,65 @@ export default function AdminPanel() {
                     }
                   />
                 </Input>
-                <Input label="Link Marketplace" error={errors.marketplace_link}>
+                <h3 className="font-semibold text-sm pt-2 border-t text-slate-500">
+                  Link Marketplace
+                </h3>
+                <Input
+                  label="Shopee"
+                  error={errors["marketplace_links.shopee"]}
+                >
                   <input
                     type="text"
                     className="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200"
-                    value={compForm.marketplace_link}
+                    placeholder="https://shopee.co.id/..."
+                    value={compForm.marketplace_links.shopee}
                     onChange={(e) =>
                       setCompForm({
                         ...compForm,
-                        marketplace_link: e.target.value,
+                        marketplace_links: {
+                          ...compForm.marketplace_links,
+                          shopee: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </Input>
+                <Input
+                  label="Tokopedia"
+                  error={errors["marketplace_links.tokopedia"]}
+                >
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200"
+                    placeholder="https://tokopedia.com/..."
+                    value={compForm.marketplace_links.tokopedia}
+                    onChange={(e) =>
+                      setCompForm({
+                        ...compForm,
+                        marketplace_links: {
+                          ...compForm.marketplace_links,
+                          tokopedia: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </Input>
+                <Input
+                  label="Lazada"
+                  error={errors["marketplace_links.lazada"]}
+                >
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200"
+                    placeholder="https://lazada.co.id/..."
+                    value={compForm.marketplace_links.lazada}
+                    onChange={(e) =>
+                      setCompForm({
+                        ...compForm,
+                        marketplace_links: {
+                          ...compForm.marketplace_links,
+                          lazada: e.target.value,
+                        },
                       })
                     }
                   />
@@ -820,20 +880,21 @@ function Modal({
   children: React.ReactNode;
   onClose: () => void;
 }) {
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-lg relative max-h-full flex flex-col">
+  return createPortal(
+    <div className="fixed inset-0 top-0 left-0 w-full h-full bg-black/40 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-xl p-6 w-full max-w-lg relative max-h-full flex flex-col shadow-2xl animate-fade-in-up">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4"
+          className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 transition-colors"
         >
           <X />
         </button>
-        <h2 className="text-2xl font-bold mb-4">{title}</h2>
+        <h2 className="text-2xl font-bold mb-4 text-slate-800">{title}</h2>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

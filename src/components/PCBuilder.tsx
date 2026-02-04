@@ -11,9 +11,10 @@ import {
   Box,
   Fan,
   Search,
-  Filter as FilterIcon,
+  Info,
 } from "lucide-react";
 import MarketplaceButtons from "./MarketplaceButtons";
+import ComponentDetailModal from "./ComponentDetailModal";
 
 const BUDGET_ALLOCATION = {
   CPU: 0.25,
@@ -46,6 +47,9 @@ export default function PCBuilder() {
   // Modes
   const [buildMode, setBuildMode] = useState<"full" | "part">("full");
   const [targetComponent, setTargetComponent] = useState<ComponentType>("GPU");
+  const [selectedComponent, setSelectedComponent] = useState<Component | null>(
+    null,
+  );
 
   // Filters
   const [platform, setPlatform] = useState<"all" | "intel" | "amd">("all");
@@ -229,7 +233,7 @@ export default function PCBuilder() {
         </h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed">
           Gunakan algoritma pintar kami untuk mendapatkan kombinasi spesifikasi
-          komputer terbaik sesuai anggaran Anda. Cepat, akurat, dan optimal.
+          komputer terbaik sesuai anggaran Anda. Pasti cepat, akurat, dan optimal.
         </p>
       </div>
 
@@ -245,11 +249,10 @@ export default function PCBuilder() {
                 setBuildMode("full");
                 setRecommendation(null);
               }}
-              className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${
-                buildMode === "full"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
+              className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${buildMode === "full"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+                }`}
             >
               Full Rakitan FC
             </button>
@@ -258,11 +261,10 @@ export default function PCBuilder() {
                 setBuildMode("part");
                 setRecommendation(null);
               }}
-              className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${
-                buildMode === "part"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
+              className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${buildMode === "part"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+                }`}
             >
               Cari Komponen Satuan
             </button>
@@ -310,11 +312,10 @@ export default function PCBuilder() {
                   <button
                     key={type}
                     onClick={() => setTargetComponent(type)}
-                    className={`py-2 px-3 text-sm font-bold rounded-lg border-2 transition-all ${
-                      targetComponent === type
-                        ? "border-blue-500 bg-blue-50 text-blue-600"
-                        : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
-                    }`}
+                    className={`py-2 px-3 text-sm font-bold rounded-lg border-2 transition-all ${targetComponent === type
+                      ? "border-blue-500 bg-blue-50 text-blue-600"
+                      : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                      }`}
                   >
                     {type}
                   </button>
@@ -330,86 +331,80 @@ export default function PCBuilder() {
               (buildMode === "part" &&
                 (targetComponent === "CPU" ||
                   targetComponent === "Motherboard"))) && (
-              <div className="flex-1 animate-fade-in">
-                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
-                  Platform Processor
-                </label>
-                <div className="flex bg-slate-100 p-1 rounded-lg">
-                  <button
-                    onClick={() => setPlatform("all")}
-                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                      platform === "all"
+                <div className="flex-1 animate-fade-in">
+                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                    Platform Processor
+                  </label>
+                  <div className="flex bg-slate-100 p-1 rounded-lg">
+                    <button
+                      onClick={() => setPlatform("all")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${platform === "all"
                         ? "bg-white text-blue-600 shadow-sm"
                         : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setPlatform("intel")}
-                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                      platform === "intel"
+                        }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setPlatform("intel")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${platform === "intel"
                         ? "bg-white text-blue-600 shadow-sm"
                         : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    Intel
-                  </button>
-                  <button
-                    onClick={() => setPlatform("amd")}
-                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                      platform === "amd"
+                        }`}
+                    >
+                      Intel
+                    </button>
+                    <button
+                      onClick={() => setPlatform("amd")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${platform === "amd"
                         ? "bg-white text-blue-600 shadow-sm"
                         : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    AMD
-                  </button>
+                        }`}
+                    >
+                      AMD
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Show GPU Filter if Full Mode OR (Part Mode AND GPU selected) */}
             {(buildMode === "full" ||
               (buildMode === "part" && targetComponent === "GPU")) && (
-              <div className="flex-1 animate-fade-in">
-                <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
-                  Jenis GPU
-                </label>
-                <div className="flex bg-slate-100 p-1 rounded-lg">
-                  <button
-                    onClick={() => setGpuType("all")}
-                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                      gpuType === "all"
+                <div className="flex-1 animate-fade-in">
+                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                    Jenis GPU
+                  </label>
+                  <div className="flex bg-slate-100 p-1 rounded-lg">
+                    <button
+                      onClick={() => setGpuType("all")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${gpuType === "all"
                         ? "bg-white text-blue-600 shadow-sm"
                         : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setGpuType("nvidia")}
-                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                      gpuType === "nvidia"
+                        }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setGpuType("nvidia")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${gpuType === "nvidia"
                         ? "bg-white text-green-600 shadow-sm"
                         : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    NVIDIA
-                  </button>
-                  <button
-                    onClick={() => setGpuType("amd")}
-                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${
-                      gpuType === "amd"
+                        }`}
+                    >
+                      NVIDIA
+                    </button>
+                    <button
+                      onClick={() => setGpuType("amd")}
+                      className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${gpuType === "amd"
                         ? "bg-white text-red-600 shadow-sm"
                         : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    Radeon
-                  </button>
+                        }`}
+                    >
+                      Radeon
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
 
           <button
@@ -510,12 +505,26 @@ export default function PCBuilder() {
                         name={(component as Component).name}
                         links={(component as Component).marketplace_links}
                       />
+                      <button
+                        onClick={() => setSelectedComponent(component as Component)}
+                        className="w-full mt-2 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Info size={16} />
+                        Lihat Detail
+                      </button>
                     </div>
                   </div>
                 );
               })}
           </div>
         </div>
+      )}
+
+      {selectedComponent && (
+        <ComponentDetailModal
+          component={selectedComponent}
+          onClose={() => setSelectedComponent(null)}
+        />
       )}
     </div>
   );
