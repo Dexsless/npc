@@ -233,7 +233,7 @@ export default function PCBuilder() {
         </h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed">
           Gunakan algoritma pintar kami untuk mendapatkan kombinasi spesifikasi
-          komputer terbaik sesuai anggaran Anda. Cepat, akurat, dan optimal.
+          komputer terbaik sesuai anggaran Anda. Pasti cepat, akurat, dan optimal.
         </p>
       </div>
 
