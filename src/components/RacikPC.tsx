@@ -253,14 +253,23 @@ export default function RacikPC() {
                             {selected[type]!.specs}
                           </p>
                           <div className="mt-2">
-                            <a
-                              href={selected[type]!.marketplace_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs font-semibold text-blue-500 hover:text-blue-700 flex items-center gap-1 hover:underline"
-                            >
-                              <ShoppingCart size={12} /> Beli Sekarang
-                            </a>
+                            {(() => {
+                              const primaryLink =
+                                selected[type]!.marketplace_links?.shopee ||
+                                selected[type]!.marketplace_links?.tokopedia ||
+                                selected[type]!.marketplace_links?.lazada ||
+                                selected[type]!.marketplace_link;
+                              return primaryLink ? (
+                                <a
+                                  href={primaryLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs font-semibold text-blue-500 hover:text-blue-700 flex items-center gap-1 hover:underline"
+                                >
+                                  <ShoppingCart size={12} /> Beli Sekarang
+                                </a>
+                              ) : null;
+                            })()}
                           </div>
                         </div>
                       </div>

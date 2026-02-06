@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS components (
   specs TEXT,
   description TEXT,
   marketplace_link TEXT,
+  marketplace_links JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS monitors (
   rating DECIMAL(3, 2) DEFAULT 0,
   featured BOOLEAN DEFAULT FALSE,
   image_url TEXT,
+  marketplace_links JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
